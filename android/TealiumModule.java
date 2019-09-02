@@ -21,7 +21,7 @@ import com.tealium.lifecycle.LifeCycle;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-
+import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -160,13 +160,15 @@ public class TealiumModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void trackEventForInstance(String instanceName, String eventName, ReadableMap data) {
         final Tealium instance = Tealium.getInstance(instanceName);
+
         if (instance == null) {
             Log.e(BuildConfig.TAG, "TrackEvent attempted, but Tealium not enabled for instance name: " + instanceName);
             return;
         }
 
         if (data != null) {
-            instance.trackEvent(eventName, data.toHashMap());
+            Map<String, Object> mapData = convertMapsToJson(data.toHashMap());
+            instance.trackEvent(eventName, mapData);
         } else {
             instance.trackEvent(eventName, null);
         }
@@ -187,10 +189,21 @@ public class TealiumModule extends ReactContextBaseJavaModule {
         }
 
         if (data != null) {
-            instance.trackView(viewName, data.toHashMap());
+            Map<String, Object> mapData = convertMapsToJson(data.toHashMap());
+            instance.trackView(viewName, mapData);
         } else {
             instance.trackView(viewName, null);
         }
+    }
+
+    private Map<String, Object> convertMapsToJson(Map<String, Object> mapData) {
+        Set<String> keySet = mapData.keySet();
+        for (String key : keySet) {
+            if (mapData.get(key) instanceof Map) {
+                mapData.put(key, new JSONObject((Map)mapData.get(key)));
+            }
+        }
+        return mapData;
     }
 
     @ReactMethod
